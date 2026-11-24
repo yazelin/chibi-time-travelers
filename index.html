@@ -6,6 +6,7 @@
 <title>古代冰淇淋店的客人</title>
 <meta name="description" content="林亞澤各部作品的角色穿越到古代的 Q 版人設與台詞，給茶葉飲料的冰淇淋店小遊戲挑顧客。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6efe2;--paper:#fffaf0;--ink:#3b2a20;--muted:#7a6656;--line:#e2d4bd;--accent:#b5452f;--accent-soft:#f3d9cf;--chip:#efe4cf}
@@ -41,6 +42,10 @@ legend{font-size:13px;color:var(--muted);margin-bottom:2px}
 textarea{width:100%;min-height:200px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg);color:var(--ink);font:15px/1.7 "Noto Sans TC",sans-serif}
 button{margin-top:10px;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:10px 22px;font:500 15px "Noto Sans TC",sans-serif;cursor:pointer}
 .muted{color:var(--muted);font-size:14px}
+.dl{display:inline-block;margin-top:10px;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:10px 22px;font:500 15px "Noto Sans TC",sans-serif;cursor:pointer}
+.dl.small{margin:0;padding:8px 16px;font-size:14px;background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.dl:disabled{opacity:.6;cursor:wait}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .site-footer{margin-top:48px;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;color:var(--muted);font-size:14px}
 .site-footer a{color:var(--accent);text-decoration:none}
 </style>
@@ -49,13 +54,14 @@ button{margin-top:10px;background:var(--accent);color:#fff;border:0;border-radiu
 <main>
   <h1>古代冰淇淋店的客人</h1>
   <p class="lead">這些是我幾部作品裡的角色，換上古裝的 Q 版樣子，給茶葉飲料的冰淇淋店小遊戲挑顧客用。每個角色附上古代職業、人設，和三種反應台詞：打招呼、拿到滿意的冰淇淋、拿到不滿意的冰淇淋。</p>
-  <p class="lead">全部角色都可以用，挑喜歡的就好，台詞也可以自己改。點圖可以開原尺寸大圖，做 3D 時參考。勾「要這個角色」的會在最下面整理成一份清單，有職業、台詞和大圖網址，方便複製到自己的筆記；台詞有兩句以上的可以先挑一句。</p>
+  <p class="lead">全部角色都可以用，挑喜歡的就好。台詞、職業和人設都是我先擬的初步設定，請照妳遊戲裡的需要自由修改。每張卡片可以單獨下載，裡面是原尺寸大圖和完整設定（作品、職業、人設、台詞）；也可以一次下載全部。勾「要這個角色」的會在最下面整理成清單，可以複製，也可以只下載勾選的。</p>
+  <div class="actions"><button class="dl" type="button" data-all>下載全部角色（圖＋設定）</button></div>
   <div class="grid" id="grid"></div>
   <section id="out">
     <h2>挑好的角色</h2>
     <p class="muted" id="count">還沒有勾任何角色。</p>
     <textarea id="txt" readonly></textarea>
-    <button id="copy" type="button">複製這段文字</button>
+    <div class="actions"><button id="copy" type="button">複製這段文字</button><button class="dl" type="button" id="dlpicked">下載勾選的角色</button><button class="dl small" type="button" data-all>下載全部角色</button></div>
   </section>
   <footer class="site-footer">
     <span>林亞澤</span>
@@ -80,7 +86,7 @@ function render(data){
         ?`<label class="opt"><input type="radio" name="${c.id}-${k}" value="${i}" ${i?"":"checked"}><span>${t}</span></label>`
         :`<div class="opt"><span>${t}</span></div>`).join("")+`</fieldset>`;
     });
-    html+=`<label class="pick"><input type="checkbox" data-id="${c.id}">要這個角色</label></div>`;
+    html+=`<div class="actions"><button class="dl small" type="button" data-one="${c.id}">下載這個角色</button></div><label class="pick"><input type="checkbox" data-id="${c.id}">要這個角色</label></div>`;
     card.innerHTML=html;grid.appendChild(card);
   });
   grid.addEventListener("change",e=>{
@@ -96,7 +102,7 @@ function summary(data){
   document.getElementById("count").textContent=picked.length?`勾了 ${picked.length} 個角色。`:"還沒有勾任何角色。";
   document.getElementById("txt").value=picked.map(c=>{
     const s=state[c.id];
-    return `${c.name}（《${c.work}》）\n古代職業：${c.job}\n`+SLOTS.map(([k,label])=>`${label}：${c.lines[k][s[k]]}`).join("\n")+`\n人設圖：${location.origin}${location.pathname.replace(/index\.html$/,"")}img/full/${c.id}.webp`;
+    return sheet(c,s)+`\n人設圖：${base()}img/full/${c.id}.webp`;
   }).join("\n\n");
 }
 document.getElementById("copy").addEventListener("click",async()=>{
@@ -104,7 +110,38 @@ document.getElementById("copy").addEventListener("click",async()=>{
   try{await navigator.clipboard.writeText(v);b.textContent="已複製"}catch{document.getElementById("txt").select();b.textContent="請按 Ctrl+C 複製"}
   setTimeout(()=>b.textContent="複製這段文字",1800);
 });
-fetch("characters.json").then(r=>r.json()).then(render);
+function base(){return location.origin+location.pathname.replace(/index\.html$/,"")}
+// 完整設定：s 給了就只寫挑定的那句，沒給就把候選台詞全列
+function sheet(c,s){
+  let t=`${c.name}\n出自：《${c.work}》\n古代職業：${c.job}\n人設：${c.profile}\n`+(c.note?`備註：${c.note}\n`:"");
+  return t+SLOTS.map(([k,label])=>s?`${label}：${c.lines[k][s[k]]}`:`${label}：`+(c.lines[k].length>1?"\n"+c.lines[k].map((x,i)=>`  ${i+1}. ${x}`).join("\n"):c.lines[k][0])).join("\n");
+}
+async function zipOf(list,name,picked,btn){
+  const old=btn.textContent;btn.disabled=true;
+  try{
+    const z=new JSZip();
+    let i=0;
+    for(const c of list){
+      btn.textContent=`打包中 ${++i}/${list.length}`;
+      const dir=z.folder(`${String(DATA.characters.indexOf(c)+1).padStart(2,"0")}_${c.name}`);
+      dir.file(`${c.name}.webp`,await (await fetch(`img/full/${c.id}.webp`)).blob());
+      dir.file("設定.txt",sheet(c,picked?state[c.id]:null)+"\n");
+    }
+    if(list.length>1){z.file("characters.json",JSON.stringify({characters:list},null,2));z.file("全部設定.txt",list.map(c=>sheet(c,picked?state[c.id]:null)).join("\n\n")+"\n")}
+    const blob=await z.generateAsync({type:"blob"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }catch(e){alert("下載失敗："+e.message)}
+  btn.textContent=old;btn.disabled=false;
+}
+let DATA;
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b||!DATA)return;
+  if(b.dataset.one){const c=DATA.characters.find(x=>x.id===b.dataset.one);zipOf([c],`${c.name}.zip`,false,b)}
+  else if(b.hasAttribute("data-all"))zipOf(DATA.characters,"古代冰淇淋店的客人_全部角色.zip",false,b);
+  else if(b.id==="dlpicked"){const l=DATA.characters.filter(c=>state[c.id].on);if(!l.length){alert("還沒有勾任何角色。");return}zipOf(l,"古代冰淇淋店的客人_勾選角色.zip",true,b)}
+});
+fetch("characters.json").then(r=>r.json()).then(d=>{DATA=d;render(d)});
 </script>
 <!-- yz-promo-footer v11 | 三件套+BMC 注意力效果 | https://github.com/yazelin/promo-footer-skill -->
 <script>
